@@ -5,6 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import math 
+from io import StringIO
 
 #%% Functions
 
@@ -16,7 +17,7 @@ def get_dataframe(url):
 
     launches_table = soup.find_all('table',{'class':'wikitable'})
 
-    dfs = pd.read_html(str(launches_table)) # convert all tables to dataframes
+    dfs = pd.read_html(StringIO(str(launches_table))) # convert all tables to dataframes
     df = dfs[0] #get first table on page
     
     #this removes the multi-column headings
@@ -118,7 +119,7 @@ data['Starlink'] = df.reset_index()
 url = 'https://en.wikipedia.org/wiki/Amazon_Leo'
 df = get_dataframe(url)
 
-wanted_column_names = ['Date and time (UTC)','Satellites','Launch status']
+wanted_column_names = ['Launch (UTC)','Satellites','Launch status']
 df = basic_cleaning(df, wanted_column_names)
 
 df = df[df['Launch Date'].dt.year > 2023]
