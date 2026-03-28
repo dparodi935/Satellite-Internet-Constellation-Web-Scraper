@@ -1,7 +1,8 @@
 from bs4 import BeautifulSoup
 import requests as r
-import datetime as dt
 import pandas as pd
+import matplotlib
+
 import matplotlib.pyplot as plt
 import numpy as np
 import math 
@@ -160,7 +161,7 @@ df = basic_cleaning(df, wanted_column_names)
 data['Guowang'] = df.reset_index()
 
 
-#%% Plot
+#%% 
 for constellation in data:
     data[constellation]['Number'] = pd.to_numeric(data[constellation]['Number'])
     data[constellation]['Constellation'] = constellation
@@ -169,58 +170,61 @@ merged_df = pd.concat(data.values(), ignore_index=True)
 merged_df = merged_df.sort_values(by=['Launch Date']) 
 #merged df is a combined, ordered list of all constellation launches
 
+#%%Plot 
+
+fig, ax = plt.subplots(2,2)
+
+
 #%% Actual time area plot over all time
 
 plot_data = return_cumulative_data(merged_df)
-plot_data.plot.area(figsize=(12,6))
+plot_data.plot.area(ax=ax[0][0],figsize=(12,6))
 
-plt.xlim(plot_data.index[0],plot_data.index[-1])
-plt.ylim(0,None)
-plt.ylabel("Cumulative Number of Satellites")
+ax[0][0].set_xlim(plot_data.index[0],plot_data.index[-1])
+ax[0][0].set_ylim(0,None)
+ax[0][0].set_ylabel("Cumulative Number of Satellites")
 
-plt.title("Cumulative number of satellites")
+ax[0][0].set_title("Cumulative number of satellites")
 
-plt.show()
 
 #%% Date shift line plot over all time
 
 plot_data = return_cumulative_data(merged_df, dateshift=True)
-plot_data.plot(figsize=(12,6))
+plot_data.plot(ax=ax[0][1],figsize=(12,6))
 
-plt.xlim(0,None)
-plt.ylim(0,None)
-plt.ylabel("Cumulative Number of Satellites")
+ax[0][1].set_xlim(0,None)
+ax[0][1].set_ylim(0,None)
+ax[0][1].set_ylabel("Cumulative Number of Satellites")
 
-plt.title("Cumulative number of satellites")
-
-plt.show()
+ax[0][1].set_title("Cumulative number of satellites")
 
 
 #%% Date shift line plot over first n years
 
 plot_data = return_cumulative_data(merged_df, dateshift=True)
-plot_data.plot(figsize=(12,6))
+plot_data.plot(ax=ax[1][0],figsize=(12,6))
 
 max_days = plot_data.drop(columns=['Starlink']).idxmax()
 final_max_day = max_days.max()
 n_of_years = math.ceil(final_max_day/365)
 upper_bound_index = plot_data.index[np.argmin(abs(plot_data.index-365*n_of_years))]
 
-plt.xlim(0,365*n_of_years)
-plt.ylim(0,plot_data['Starlink'][upper_bound_index]*1.1)
-plt.ylabel("Cumulative Number of Satellites")
+ax[1][0].set_xlim(0,365*n_of_years)
+ax[1][0].set_ylim(0,plot_data['Starlink'][upper_bound_index]*1.1)
+ax[1][0].set_ylabel("Cumulative Number of Satellites")
 
-plt.title(f"Cumulative number of satellites in the first {n_of_years} years")
+ax[1][0].set_title(f"Cumulative number of satellites in the first {n_of_years} years")
 
-plt.show()
 
 #%% Date shift log line plot over all time
 log_plot_data = return_cumulative_data(merged_df, do_log=True, dateshift=True)
-log_plot_data.plot(figsize=(12,6))
+log_plot_data.plot(ax=ax[1][1],figsize=(12,6))
 
-plt.xlim(0,None)
-plt.ylabel("Log of Cumulative Number of Satellites")
+ax[1][1].set_xlim(0,None)
+ax[1][1].set_ylabel("Log of Cumulative Number of Satellites")
 
-plt.title("Log of Cumulative Number of Satellites")
+ax[1][1].set_title("Log of Cumulative Number of Satellites")
 
+#%%
+plt.tight_layout()
 plt.show()
