@@ -36,7 +36,15 @@ def basic_cleaning(df, wanted_column_names):
     df.columns = df.columns.str.replace(r'\s+', ' ', regex=True).str.strip()
 
     #drop columns I don't want
-    df = df[wanted_column_names]
+    chosen_wanted_column_names = []
+    #this will select the actual column names by looking for appearance of the user input, e.g. UTC
+    for name in wanted_column_names:
+        for actual_name in list(df.columns):
+            if name.lower() in actual_name.lower():
+                chosen_wanted_column_names.append(actual_name)
+    print(chosen_wanted_column_names)
+    
+    df = df[chosen_wanted_column_names]
 
     #rename headers
     df.columns = ['Launch Date','Number', 'Outcome']
@@ -104,35 +112,39 @@ def return_launch_data(df, do_log=False, dateshift=False):
 data = {}
 
 #%% Starlink
+print("Starlink")
 url = 'https://en.wikipedia.org/wiki/List_of_Starlink_and_Starshield_launches'
 df = get_dataframe(url)
 
-wanted_column_names = ['Launch date, time (UTC)','Deployed','Outcome']
+wanted_column_names = ['(UTC)','Deployed','Outcome','Status']
 df = basic_cleaning(df, wanted_column_names)
 
+#remove prototype launch
 df = df[df['Launch Date'].dt.year > 2018]
 
 data['Starlink'] = df.reset_index()
 
 
 #%% Amazon Leo
-
+print("Amazon LEO")
 url = 'https://en.wikipedia.org/wiki/Amazon_Leo'
 df = get_dataframe(url)
 
-wanted_column_names = ['Launch (UTC)','Satellites','Launch status']
+wanted_column_names = ['UTC','Satellites','Outcome','Status']
 df = basic_cleaning(df, wanted_column_names)
 
+#remove prototype launch
 df = df[df['Launch Date'].dt.year > 2023]
 
 data['Amazon Leo'] = df.reset_index()
 
 
 #%% Qianfan
+print("Qianfan")
 url = 'https://en.wikipedia.org/wiki/Qianfan'
 df = get_dataframe(url)
 
-wanted_column_names = ['Launch (UTC)','Name & number of satellites', 'Status']
+wanted_column_names = ['UTC','Name & number of satellites','Outcome','Status']
 df = basic_cleaning(df, wanted_column_names)
 
 #Change satellite count from cumulative
@@ -148,13 +160,11 @@ data['Qianfan'] = df.reset_index()
 
 
 #%% Guowang
-
-
-
+print("Guowang")
 url = 'https://en.wikipedia.org/wiki/Guowang'
 df = get_dataframe(url)
 
-wanted_column_names = ['Launch (UTC)','Number of satellites','Status']
+wanted_column_names = ['UTC','Number of satellites','Outcome','Status']
 df = basic_cleaning(df, wanted_column_names)
 
 
