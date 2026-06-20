@@ -43,7 +43,6 @@ def basic_cleaning(df, wanted_column_names):
         for actual_name in list(df.columns):
             if name.lower() in actual_name.lower():
                 chosen_wanted_column_names.append(actual_name)
-    print(chosen_wanted_column_names)
     
     df = df[chosen_wanted_column_names]
 
@@ -76,11 +75,8 @@ def return_cumulative_data(df, do_log=False, dateshift=False):
     if do_log:  cleaned_df['Cumulative'] = np.log10(cleaned_df['Cumulative'])
     
     if dateshift:
-        #aligning the times so they are counted relative to each constellation's first launch
         cleaned_df['Day Zero'] = cleaned_df.groupby('Constellation')['Launch Date'].transform('min')
         cleaned_df['Launch Date'] = (cleaned_df['Launch Date']-cleaned_df['Day Zero']).dt.days
-        #cleaned_df['Durations'] = (date.today() - cleaned_df['Day Zero']).dt.days
-        #cleaned_df.loc[()]
     
     #data rearranged for plotting: now each constellation is its own column
     plot_data = cleaned_df.pivot(index='Launch Date',columns='Constellation',values='Cumulative')
@@ -98,9 +94,7 @@ def return_launch_data(df, do_log=False, dateshift=False):
     #TO ADD: group launches by month
     cleaned_df = df.groupby(['Constellation', pd.Grouper(key='Launch Date', freq='M')])['Number'].sum().reset_index()
     cleaned_df = cleaned_df.sort_values(by=['Launch Date'])
-    
-    print(cleaned_df.sample(5))
-    
+        
     if dateshift:
         #aligning the times so they are counted relative to each constellation's first launch
         cleaned_df['Day Zero'] = cleaned_df.groupby('Constellation')['Launch Date'].transform('min')
@@ -116,9 +110,11 @@ def return_launch_data(df, do_log=False, dateshift=False):
             plot_data.loc[plot_data.index > last_days[constellation], constellation] = np.nan
 
     return plot_data
-#%%
 
+
+#%%
 data = {}
+
 
 #%% Starlink
 print("Starlink")
@@ -189,11 +185,12 @@ merged_df = pd.concat(data.values(), ignore_index=True)
 merged_df = merged_df.sort_values(by=['Launch Date']) 
 #merged df is a combined, ordered (by time) list of all constellation launches
 
+
 #%%Plot 
-
 fig, ax = plt.subplots(2,2)
-
 subplot_size = (12,6)
+
+
 #%% Actual time area plot over all time
 
 plot_data = return_cumulative_data(merged_df)
@@ -240,9 +237,8 @@ ax[1][1].set_xlim(0,None)
 
 ax[1][1].set_title("Log of Cumulative Number of Satellites")
 
-#%% In text, put the latest total number for each constellation
 
-#fig.subplots_adjust(bottom=0.10,left=0)
+#%% In text, put the latest total number for each constellation
 fig.tight_layout(rect=[0, 0.05, 1, 1])
 
 cumulative_df = return_cumulative_data(merged_df)
@@ -254,11 +250,9 @@ for c in range(number_of_cons):
     line = list(total_numbers_dict.items())[c]
     fig.text((c+0.25)*(1/number_of_cons),0.02,f"{line[0]}: {int(line[1])}")
 
-#%%Divider
-
+#%% Divider
 divider = plt.Line2D([0, 1], [0.05, 0.05], transform=fig.transFigure, color='black')
 fig.add_artist(divider)
 
 #%%
-#plt.tight_layout()
 plt.show()
