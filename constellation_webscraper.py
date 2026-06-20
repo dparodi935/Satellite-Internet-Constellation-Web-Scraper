@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup
+from datetime import date
 import requests as r
 import pandas as pd
 import matplotlib
@@ -59,19 +60,27 @@ def basic_cleaning(df, wanted_column_names):
 
 
 def return_cumulative_data(df, do_log=False, dateshift=False):
+    #add dummy launches so data stretches to present day
+    constellations = list(df["Constellation"].unique())
+    pd_today_date = pd.Timestamp(date.today())
+    for c in constellations:
+        df.loc[len(df)] = [0, pd_today_date, 0, "Success",c]    
+    
     #this adds together launches that occurred on the same day
     cleaned_df = df.groupby(['Launch Date', 'Constellation'])['Number'].sum().reset_index()
     cleaned_df = cleaned_df.sort_values(by=['Launch Date'])
     
     #this finds the cumulative sum over time of the satellite launches
     cleaned_df['Cumulative'] = cleaned_df.groupby('Constellation')['Number'].cumsum()
+    
     if do_log:  cleaned_df['Cumulative'] = np.log10(cleaned_df['Cumulative'])
     
     if dateshift:
         #aligning the times so they are counted relative to each constellation's first launch
         cleaned_df['Day Zero'] = cleaned_df.groupby('Constellation')['Launch Date'].transform('min')
         cleaned_df['Launch Date'] = (cleaned_df['Launch Date']-cleaned_df['Day Zero']).dt.days
-        
+        #cleaned_df['Durations'] = (date.today() - cleaned_df['Day Zero']).dt.days
+        #cleaned_df.loc[()]
     
     #data rearranged for plotting: now each constellation is its own column
     plot_data = cleaned_df.pivot(index='Launch Date',columns='Constellation',values='Cumulative')
@@ -178,21 +187,20 @@ for constellation in data:
     
 merged_df = pd.concat(data.values(), ignore_index=True)
 merged_df = merged_df.sort_values(by=['Launch Date']) 
-#merged df is a combined, ordered list of all constellation launches
+#merged df is a combined, ordered (by time) list of all constellation launches
 
 #%%Plot 
 
 fig, ax = plt.subplots(2,2)
 
-
+subplot_size = (12,6)
 #%% Actual time area plot over all time
 
 plot_data = return_cumulative_data(merged_df)
-plot_data.plot.area(ax=ax[0][0],figsize=(12,6))
+plot_data.plot.area(ax=ax[0][0],figsize=subplot_size)
 
 ax[0][0].set_xlim(plot_data.index[0],plot_data.index[-1])
 ax[0][0].set_ylim(0,None)
-ax[0][0].set_ylabel("Cumulative Number of Satellites")
 
 ax[0][0].set_title("Cumulative number of satellites")
 
@@ -200,11 +208,10 @@ ax[0][0].set_title("Cumulative number of satellites")
 #%% Date shift line plot over all time
 
 plot_data = return_cumulative_data(merged_df, dateshift=True)
-plot_data.plot(ax=ax[0][1],figsize=(12,6))
+plot_data.plot(ax=ax[0][1],figsize=subplot_size )
 
 ax[0][1].set_xlim(0,None)
 ax[0][1].set_ylim(0,None)
-ax[0][1].set_ylabel("Cumulative Number of Satellites")
 
 ax[0][1].set_title("Cumulative number of satellites")
 
@@ -212,7 +219,7 @@ ax[0][1].set_title("Cumulative number of satellites")
 #%% Date shift line plot over first n years
 
 plot_data = return_cumulative_data(merged_df, dateshift=True)
-plot_data.plot(ax=ax[1][0],figsize=(12,6))
+plot_data.plot(ax=ax[1][0],figsize=subplot_size)
 
 max_days = plot_data.drop(columns=['Starlink']).idxmax()
 final_max_day = max_days.max()
@@ -221,20 +228,37 @@ upper_bound_index = plot_data.index[np.argmin(abs(plot_data.index-365*n_of_years
 
 ax[1][0].set_xlim(0,365*n_of_years)
 ax[1][0].set_ylim(0,plot_data['Starlink'][upper_bound_index]*1.1)
-ax[1][0].set_ylabel("Cumulative Number of Satellites")
 
 ax[1][0].set_title(f"Cumulative number of satellites in the first {n_of_years} years")
 
 
 #%% Date shift log line plot over all time
 log_plot_data = return_cumulative_data(merged_df, do_log=True, dateshift=True)
-log_plot_data.plot(ax=ax[1][1],figsize=(12,6))
+log_plot_data.plot(ax=ax[1][1],figsize=subplot_size )
 
 ax[1][1].set_xlim(0,None)
-ax[1][1].set_ylabel("Log of Cumulative Number of Satellites")
 
 ax[1][1].set_title("Log of Cumulative Number of Satellites")
 
+#%% In text, put the latest total number for each constellation
+
+#fig.subplots_adjust(bottom=0.10,left=0)
+fig.tight_layout(rect=[0, 0.05, 1, 1])
+
+cumulative_df = return_cumulative_data(merged_df)
+total_numbers_dict = dict(cumulative_df.iloc[-1])
+box = {"fill":False}
+
+number_of_cons = len(total_numbers_dict.keys())
+for c in range(number_of_cons):
+    line = list(total_numbers_dict.items())[c]
+    fig.text((c+0.25)*(1/number_of_cons),0.02,f"{line[0]}: {int(line[1])}")
+
+#%%Divider
+
+divider = plt.Line2D([0, 1], [0.05, 0.05], transform=fig.transFigure, color='black')
+fig.add_artist(divider)
+
 #%%
-plt.tight_layout()
+#plt.tight_layout()
 plt.show()
