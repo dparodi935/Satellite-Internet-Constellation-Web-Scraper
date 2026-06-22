@@ -49,8 +49,9 @@ def basic_cleaning(df, wanted_column_names):
     #rename headers
     df.columns = ['Launch Date','Number', 'Outcome']
         
-    #drop planned launches
+    #drop planned and unsuccessful launches
     df = df[df['Outcome'] != 'Planned']
+    df = df[df['Outcome'] != 'Failure']
     
     df['Launch Date'] = pd.to_datetime(df['Launch Date'], format='mixed', dayfirst=True, errors='coerce')
     df['Launch Date'] = df['Launch Date'].dt.normalize() #sets time to zero
